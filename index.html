@@ -174,8 +174,10 @@ async function loadEvents() {
 
     eventsStatus.textContent = `${snapshot.size}件のイベント`;
 
-    snapshot.forEach((doc) => {
-      const event = doc.data();
+    
+snapshot.forEach((eventDoc) => {
+  const event = eventDoc.data();
+
       const card = document.createElement("article");
 
       card.style.cssText =
@@ -217,7 +219,9 @@ if (event.status === "pending") {
     rejectButton.disabled = true;
 
     try {
-      await updateDoc(doc(db, "events", doc.id), {
+      
+await updateDoc(doc(db, "events", eventDoc.id), {
+
         status: newStatus
       });
       await loadEvents();
