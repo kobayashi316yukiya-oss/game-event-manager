@@ -1,0 +1,131 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#172554">
+  <title>ゲームイベント管理</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 24px;
+      background: #f1f5f9;
+      color: #1e293b;
+      font-family: system-ui, sans-serif;
+    }
+    main {
+      max-width: 640px;
+      margin: 40px auto;
+      padding: 28px;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px #00000010;
+    }
+    h1 { font-size: 25px; }
+    button {
+      padding: 12px 20px;
+      border: 0;
+      border-radius: 8px;
+      background: #2563eb;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    button:disabled { opacity: .5; }
+    #status { margin: 20px 0; color: #475569; }
+    #userInfo {
+      display: none;
+      padding: 16px;
+      background: #eff6ff;
+      border-radius: 8px;
+      overflow-wrap: anywhere;
+    }
+    .hint { color: #64748b; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>🎮 ゲームイベント管理</h1>
+    <p>ゲームイベントの開催期間をまとめて管理するアプリです。</p>
+
+    <p id="status">Firebaseに接続する準備ができました。</p>
+
+    <button id="loginButton">Googleアカウントでログイン</button>
+    <button id="logoutButton" style="display:none;">ログアウト</button>
+
+    <section id="userInfo">
+      <h3>ログイン成功！</h3>
+      <p>ユーザーUID：</p>
+      <code id="uid"></code>
+    </section>
+
+    <p class="hint">
+      対応予定：ブルーアーカイブ / 崩壊：スターレイル /
+      ゼンレスゾーンゼロ / ヘブンバーンズレッド
+    </p>
+  </main>
+
+  <script type="module">
+    import { initializeApp } from
+      "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+
+    import {
+      getAuth,
+      GoogleAuthProvider,
+      signInWithPopup,
+      onAuthStateChanged,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+
+    // FirebaseのSDK設定情報をここに入力してください
+    const firebaseConfig = {
+      apiKey: "AIzaSyC6Fwq33hwULwuallZz-FZA6U6Inax6Fgc",
+      authDomain: "game-event-manager-7a8bd.firebaseapp.com",
+      projectId: "game-event-manager-7a8bd",
+      storageBucket: "game-event-manager-7a8bd.firebasestorage.app",
+      messagingSenderId: "378235521140",
+      appId: "1:378235521140:web:e9a1d2b70b1d18265fe921"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const provider = new GoogleAuthProvider();
+
+    const status = document.getElementById("status");
+    const loginButton = document.getElementById("loginButton");
+    const logoutButton = document.getElementById("logoutButton");
+    const userInfo = document.getElementById("userInfo");
+    const uid = document.getElementById("uid");
+
+    loginButton.addEventListener("click", async () => {
+      try {
+        status.textContent = "Googleログイン中...";
+        await signInWithPopup(auth, provider);
+      } catch (error) {
+        status.textContent = "ログインエラー：" + error.message;
+      }
+    });
+
+    logoutButton.addEventListener("click", async () => {
+      await signOut(auth);
+    });
+
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        status.textContent = "ログインしています。";
+        loginButton.style.display = "none";
+        logoutButton.style.display = "inline-block";
+        userInfo.style.display = "block";
+        uid.textContent = user.uid;
+      } else {
+        status.textContent = "ログインしていません。";
+        loginButton.style.display = "inline-block";
+        logoutButton.style.display = "none";
+        userInfo.style.display = "none";
+      }
+    });
+  </script>
+</body>
+</html>
