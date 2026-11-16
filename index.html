@@ -90,7 +90,9 @@
 import {
   getFirestore,
   collection,
-  getDocs
+  getDocs,
+  doc,
+  updateDoc
 } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
 
 
@@ -195,8 +197,51 @@ async function loadEvents() {
       const state = document.createElement("p");
       state.textContent = "状態：" + (event.status || "未設定");
 
-      card.append(title, game, period, state);
-      eventsList.appendChild(card);
+      
+card.append(title, game, period, state);
+
+if (event.status === "pending") {
+  const actions = document.createElement("div");
+  actions.style.cssText =
+    "display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;";
+
+  const approveButton = document.createElement("button");
+  approveButton.textContent = "✓ 承認する";
+
+  const rejectButton = document.createElement("button");
+  rejectButton.textContent = "✕ 却下する";
+  rejectButton.style.background = "#64748b";
+
+  async function changeStatus(newStatus) {
+    approveButton.disabled = true;
+    rejectButton.disabled = true;
+
+    try {
+      await updateDoc(doc(db, "events", doc.id), {
+        status: newStatus
+      });
+      await loadEvents();
+    } catch (error) {
+      alert("更新に失敗しました：" + error.message);
+      approveButton.disabled = false;
+      rejectButton.disabled = false;
+    }
+  }
+
+  approveButton.addEventListener("click", () => {
+    changeStatus("approved");
+  });
+
+  rejectButton.addEventListener("click", () => {
+    changeStatus("rejected");
+  });
+
+  actions.append(approveButton, rejectButton);
+  card.appendChild(actions);
+}
+
+eventsList.appendChild(card);
+
     });
   } catch (error) {
     eventsStatus.textContent = "読み込みエラー：" + error.message;
