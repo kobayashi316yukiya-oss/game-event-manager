@@ -61,6 +61,13 @@
       <code id="uid"></code>
     </section>
 
+<section id="eventsSection" style="display:none;">
+  <h2>📅 イベント一覧</h2>
+  <button id="reloadEvents">イベントを再読み込み</button>
+  <p id="eventsStatus">読み込み待機中</p>
+  <div id="eventsList"></div>
+</section>
+
     <p class="hint">
       対応予定：ブルーアーカイブ / 崩壊：スターレイル /
       ゼンレスゾーンゼロ / ヘブンバーンズレッド
@@ -79,6 +86,14 @@
       signOut
     } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
 
+    
+import {
+  getFirestore,
+  collection,
+  getDocs
+} from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+
+
     // FirebaseのSDK設定情報をここに入力してください
     const firebaseConfig = {
       apiKey: "AIzaSyC6Fwq33hwULwuallZz-FZA6U6Inax6Fgc",
@@ -91,6 +106,9 @@
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
+    
+const db = getFirestore(app);
+
     const provider = new GoogleAuthProvider();
 
     const status = document.getElementById("status");
@@ -126,6 +144,78 @@
         userInfo.style.display = "none";
       }
     });
+
+const eventsSection = document.getElementById("eventsSection");
+const eventsStatus = document.getElementById("eventsStatus");
+const eventsList = document.getElementById("eventsList");
+
+const gameNames = {
+  blue_archive: "ブルーアーカイブ",
+  star_rail: "崩壊：スターレイル",
+  zenless_zone_zero: "ゼンレスゾーンゼロ",
+  heaven_burns_red: "ヘブンバーンズレッド"
+};
+
+async function loadEvents() {
+  if (!auth.currentUser) return;
+
+  eventsStatus.textContent = "イベントを読み込み中...";
+  eventsList.replaceChildren();
+
+  try {
+    const snapshot = await getDocs(collection(db, "events"));
+
+    if (snapshot.empty) {
+      eventsStatus.textContent = "イベントはまだ登録されていません。";
+      return;
+    }
+
+    eventsStatus.textContent = `${snapshot.size}件のイベント`;
+
+    snapshot.forEach((doc) => {
+      const event = doc.data();
+      const card = document.createElement("article");
+
+      card.style.cssText =
+        "padding:16px;margin:12px 0;background:#f8fafc;" +
+        "border:1px solid #e2e8f0;border-radius:10px;";
+
+      const title = document.createElement("h3");
+      title.textContent = event.title || "タイトル未設定";
+
+      const game = document.createElement("p");
+      game.textContent =
+        "ゲーム：" + (gameNames[event.gameId] || event.gameId || "不明");
+
+      const period = document.createElement("p");
+      period.textContent =
+        "期間：" + (event.startDate || "未設定") +
+        " ～ " + (event.endDate || "未設定");
+
+      const state = document.createElement("p");
+      state.textContent = "状態：" + (event.status || "未設定");
+
+      card.append(title, game, period, state);
+      eventsList.appendChild(card);
+    });
+  } catch (error) {
+    eventsStatus.textContent = "読み込みエラー：" + error.message;
+  }
+}
+
+document.getElementById("reloadEvents")
+  .addEventListener("click", loadEvents);
+
+onAuthStateChanged(auth, (user) => {
+  eventsSection.style.display = user ? "block" : "none";
+
+  if (user) {
+    loadEvents();
+  } else {
+    eventsList.replaceChildren();
+  }
+});
+
   </script>
 </body>
 </html>
