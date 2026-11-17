@@ -1,7 +1,6 @@
 
 import re
 import urllib.request
-from urllib.parse import urlparse
 
 JS_URL = (
     "https://webusstatic.yo-star.com/"
@@ -10,17 +9,15 @@ JS_URL = (
 
 KEYWORDS = [
     "news",
-    "notice",
-    "event",
-    "api",
     "axios",
-    "http",
+    "getNews",
+    "newsList",
+    "newsDetail",
 ]
 
 
 def main():
-    print("=== Blue Archive JavaScript Inspector ===")
-    print("調査対象:", JS_URL)
+    print("=== Blue Archive News Code Inspector ===")
 
     request = urllib.request.Request(
         JS_URL,
@@ -32,56 +29,29 @@ def main():
             "utf-8", errors="replace"
         )
 
-    print("JavaScriptサイズ:", len(javascript), "文字")
-
-    print("\n=== キーワード出現回数 ===")
-
     for keyword in KEYWORDS:
-        count = len(
-            re.findall(
+        print(f"\n=== {keyword} の周辺コード ===")
+
+        matches = list(
+            re.finditer(
                 re.escape(keyword),
                 javascript,
                 re.IGNORECASE
             )
         )
-        print(f"{keyword}: {count}")
 
-    print("\n=== URL候補（最大30件） ===")
+        print("出現回数:", len(matches))
 
-    # JavaScript内に含まれるURLを抽出
-    urls = re.findall(
-        r'https?://[^\s"\'`<>\\]+',
-        javascript
-    )
+        # ログが長くなりすぎないよう最大5件
+        for index, match in enumerate(matches[:5], start=1):
+            start = max(0, match.start() - 180)
+            end = min(len(javascript), match.end() + 250)
 
-    found = []
+            snippet = javascript[start:end]
+            snippet = snippet.replace("\n", " ")
 
-    for url in urls:
-        url = url.rstrip("),;]}")
-
-        hostname = urlparse(url).hostname or ""
-
-        # 明らかな外部ライブラリや分析用URLは除外
-        if any(
-            domain in hostname
-            for domain in [
-                "google.com",
-                "googleapis.com",
-                "gstatic.com",
-                "jsdelivr.net",
-                "w3.org",
-            ]
-        ):
-            continue
-
-        if url not in found:
-            found.append(url)
-
-    for url in found[:30]:
-        print(url[:300])
-
-    if not found:
-        print("URL候補は見つかりませんでした。")
+            print(f"\n[{index}]")
+            print(snippet)
 
     print("\n調査完了")
 
