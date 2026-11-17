@@ -21,7 +21,7 @@ jobs:
           workload_identity_provider: projects/387235521140/locations/global/workloadIdentityPools/github-actions-pool/providers/github-actions
           service_account: game-event-collector@game-event-manager-7a8bd.iam.gserviceaccount.com
           token_format: access_token
-
+        
       - name: Confirm authentication
         env:
           ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
