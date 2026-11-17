@@ -1,97 +1,84 @@
 
-import re
 import urllib.request
-import urllib.error
 from html.parser import HTMLParser
+from urllib.parse import urljoin
 
 URL = "https://bluearchive.jp/"
 
-KEYWORDS = [
-    "イベント",
-    "お知らせ",
-    "開催",
-    "メンテナンス",
-    "news",
-    "event",
-]
 
-
-class PageInspector(HTMLParser):
+class ResourceInspector(HTMLParser):
     def __init__(self):
         super().__init__()
-        self.title = ""
-        self.in_title = False
+        self.scripts = []
+        self.styles = []
         self.links = []
 
     def handle_starttag(self, tag, attrs):
-        attributes = dict(attrs)
+        attrs = dict(attrs)
 
-        if tag == "title":
-            self.in_title = True
+        if tag == "script":
+            src = attrs.get("src")
+            if src:
+                self.scripts.append(urljoin(URL, src))
 
-        if tag == "a":
-            href = attributes.get("href", "")
+        elif tag == "link":
+            href = attrs.get("href")
             if href:
-                self.links.append(href)
+                self.styles.append(urljoin(URL, href))
 
-    def handle_endtag(self, tag):
-        if tag == "title":
-            self.in_title = False
-
-    def handle_data(self, data):
-        if self.in_title:
-            self.title += data
+        elif tag == "a":
+            href = attrs.get("href")
+            if href:
+                self.links.append(urljoin(URL, href))
 
 
 def main():
-    print("=== Blue Archive HTML Inspector ===")
-    print("接続先:", URL)
+    print("=== Blue Archive Resource Inspector ===")
 
     request = urllib.request.Request(
         URL,
-        headers={
-            "User-Agent": "Mozilla/5.0"
-        }
+        headers={"User-Agent": "Mozilla/5.0"}
     )
 
     with urllib.request.urlopen(request, timeout=20) as response:
-        raw_html = response.read()
-        charset = response.headers.get_content_charset() or "utf-8"
+        html = response.read().decode("utf-8", errors="replace")
 
-    html = raw_html.decode(charset, errors="replace")
+    inspector = ResourceInspector()
+    inspector.feed(html)
 
-    parser = PageInspector()
-    parser.feed(html)
+    print("\n=== JavaScriptファイル ===")
+    for src in inspector.scripts:
+        print(src)
 
-    print("HTMLサイズ:", len(raw_html), "bytes")
-    print("ページタイトル:", parser.title.strip())
-    print("リンク数:", len(parser.links))
+    print("\n=== CSS・その他リソース ===")
+    for href in inspector.styles:
+        print(href)
 
-    print("\n=== 関連リンク（最大30件） ===")
+    print("\n=== ページ内リンク ===")
+    for href in inspector.links:
+        print(href)
 
-    matched_links = []
+    print("\n=== HTML内のキーワード周辺 ===")
 
-    for link in parser.links:
-        if any(
-            keyword.lower() in link.lower()
-            for keyword in KEYWORDS
-        ):
-            if link not in matched_links:
-                matched_links.append(link)
+    keywords = [
+        "api",
+        "news",
+        "event",
+        "script",
+        "iframe"
+    ]
 
-    for link in matched_links[:30]:
-        print(link)
+    lower_html = html.lower()
 
-    if not matched_links:
-        print("関連リンクは見つかりませんでした。")
+    for keyword in keywords:
+        position = lower_html.find(keyword)
 
-    print("\n=== キーワード出現回数 ===")
+        if position >= 0:
+            start = max(0, position - 100)
+            end = min(len(html), position + 200)
 
-    for keyword in KEYWORDS:
-        count = len(
-            re.findall(re.escape(keyword), html, re.IGNORECASE)
-        )
-        print(f"{keyword}: {count}")
+            print(f"\n[{keyword}]")
+            print(html[start:end].replace("\n", " "))
 
     print("\n調査完了")
 
