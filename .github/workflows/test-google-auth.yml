@@ -18,7 +18,7 @@ jobs:
         id: auth
         uses: google-github-actions/auth@v2
         with:
-          workload_identity_provider: "https://iam.googleapis.com/projects/387235521140/locations/global/workloadIdentityPools/github-actions-pool/providers/github-actions"
+          workload_identity_provider: projects/387235521140/locations/global/workloadIdentityPools/github-actions-pool/providers/github-actions
           service_account: game-event-collector@game-event-manager-7a8bd.iam.gserviceaccount.com
           token_format: access_token
         
