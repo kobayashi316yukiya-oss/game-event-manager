@@ -1,84 +1,87 @@
 
+import re
 import urllib.request
-from html.parser import HTMLParser
-from urllib.parse import urljoin
+from urllib.parse import urlparse
 
-URL = "https://bluearchive.jp/"
+JS_URL = (
+    "https://webusstatic.yo-star.com/"
+    "bluearchive_jp_web/js/app.f992dae9.js"
+)
 
-
-class ResourceInspector(HTMLParser):
-    def __init__(self):
-        super().__init__()
-        self.scripts = []
-        self.styles = []
-        self.links = []
-
-    def handle_starttag(self, tag, attrs):
-        attrs = dict(attrs)
-
-        if tag == "script":
-            src = attrs.get("src")
-            if src:
-                self.scripts.append(urljoin(URL, src))
-
-        elif tag == "link":
-            href = attrs.get("href")
-            if href:
-                self.styles.append(urljoin(URL, href))
-
-        elif tag == "a":
-            href = attrs.get("href")
-            if href:
-                self.links.append(urljoin(URL, href))
+KEYWORDS = [
+    "news",
+    "notice",
+    "event",
+    "api",
+    "axios",
+    "http",
+]
 
 
 def main():
-    print("=== Blue Archive Resource Inspector ===")
+    print("=== Blue Archive JavaScript Inspector ===")
+    print("調査対象:", JS_URL)
 
     request = urllib.request.Request(
-        URL,
+        JS_URL,
         headers={"User-Agent": "Mozilla/5.0"}
     )
 
-    with urllib.request.urlopen(request, timeout=20) as response:
-        html = response.read().decode("utf-8", errors="replace")
+    with urllib.request.urlopen(request, timeout=30) as response:
+        javascript = response.read().decode(
+            "utf-8", errors="replace"
+        )
 
-    inspector = ResourceInspector()
-    inspector.feed(html)
+    print("JavaScriptサイズ:", len(javascript), "文字")
 
-    print("\n=== JavaScriptファイル ===")
-    for src in inspector.scripts:
-        print(src)
+    print("\n=== キーワード出現回数 ===")
 
-    print("\n=== CSS・その他リソース ===")
-    for href in inspector.styles:
-        print(href)
+    for keyword in KEYWORDS:
+        count = len(
+            re.findall(
+                re.escape(keyword),
+                javascript,
+                re.IGNORECASE
+            )
+        )
+        print(f"{keyword}: {count}")
 
-    print("\n=== ページ内リンク ===")
-    for href in inspector.links:
-        print(href)
+    print("\n=== URL候補（最大30件） ===")
 
-    print("\n=== HTML内のキーワード周辺 ===")
+    # JavaScript内に含まれるURLを抽出
+    urls = re.findall(
+        r'https?://[^\s"\'`<>\\]+',
+        javascript
+    )
 
-    keywords = [
-        "api",
-        "news",
-        "event",
-        "script",
-        "iframe"
-    ]
+    found = []
 
-    lower_html = html.lower()
+    for url in urls:
+        url = url.rstrip("),;]}")
 
-    for keyword in keywords:
-        position = lower_html.find(keyword)
+        hostname = urlparse(url).hostname or ""
 
-        if position >= 0:
-            start = max(0, position - 100)
-            end = min(len(html), position + 200)
+        # 明らかな外部ライブラリや分析用URLは除外
+        if any(
+            domain in hostname
+            for domain in [
+                "google.com",
+                "googleapis.com",
+                "gstatic.com",
+                "jsdelivr.net",
+                "w3.org",
+            ]
+        ):
+            continue
 
-            print(f"\n[{keyword}]")
-            print(html[start:end].replace("\n", " "))
+        if url not in found:
+            found.append(url)
+
+    for url in found[:30]:
+        print(url[:300])
+
+    if not found:
+        print("URL候補は見つかりませんでした。")
 
     print("\n調査完了")
 
