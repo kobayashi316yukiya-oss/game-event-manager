@@ -1,23 +1,25 @@
 
 import re
 import urllib.request
+from urllib.parse import urlparse
 
 JS_URL = (
     "https://webusstatic.yo-star.com/"
-    "bluearchive_jp_web/js/app.f992dae9.js"
+    "bluearchive_jp_web/js/chunk-vendors.e970c44.js"
 )
 
 KEYWORDS = [
     "news",
+    "api",
     "axios",
-    "getNews",
-    "newsList",
-    "newsDetail",
+    "baseURL",
+    "endpoint",
+    "bluearchive",
 ]
 
 
 def main():
-    print("=== Blue Archive News Code Inspector ===")
+    print("=== Blue Archive Vendor Inspector ===")
 
     request = urllib.request.Request(
         JS_URL,
@@ -29,29 +31,54 @@ def main():
             "utf-8", errors="replace"
         )
 
-    for keyword in KEYWORDS:
-        print(f"\n=== {keyword} の周辺コード ===")
+    print("JavaScriptサイズ:", len(javascript), "文字")
 
-        matches = list(
-            re.finditer(
+    print("\n=== キーワード出現回数 ===")
+
+    for keyword in KEYWORDS:
+        count = len(
+            re.findall(
                 re.escape(keyword),
                 javascript,
                 re.IGNORECASE
             )
         )
+        print(f"{keyword}: {count}")
 
-        print("出現回数:", len(matches))
+    print("\n=== URL候補（最大30件） ===")
 
-        # ログが長くなりすぎないよう最大5件
-        for index, match in enumerate(matches[:5], start=1):
-            start = max(0, match.start() - 180)
-            end = min(len(javascript), match.end() + 250)
+    urls = re.findall(
+        r'https?://[^\s"\'`<>\\]+',
+        javascript
+    )
 
-            snippet = javascript[start:end]
-            snippet = snippet.replace("\n", " ")
+    found = []
 
-            print(f"\n[{index}]")
-            print(snippet)
+    for url in urls:
+        url = url.rstrip("),;]}")
+
+        hostname = urlparse(url).hostname or ""
+
+        if any(
+            hostname == domain or hostname.endswith("." + domain)
+            for domain in [
+                "google.com",
+                "googleapis.com",
+                "gstatic.com",
+                "jsdelivr.net",
+                "w3.org",
+            ]
+        ):
+            continue
+
+        if url not in found:
+            found.append(url)
+
+    for url in found[:30]:
+        print(url[:300])
+
+    if not found:
+        print("URL候補は見つかりませんでした。")
 
     print("\n調査完了")
 
