@@ -29,9 +29,7 @@ PERIOD_PATTERN = re.compile(
 HEADINGS = (
     "開催期間",
     "実施期間",
-    "販売期間",
     "回答期間",
-    "申請受付期間",
 )
 
 
