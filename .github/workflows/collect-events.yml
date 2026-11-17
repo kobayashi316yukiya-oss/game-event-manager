@@ -1,0 +1,27 @@
+
+name: Collect Game Events
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  collect:
+    name: Test Python Execution
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run test
+        run: |
+          python -c "print('Game Event Collector: OK')"
+          python --version
