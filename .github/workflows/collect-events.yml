@@ -21,7 +21,6 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Run test
-        run: |
-          python -c "print('Game Event Collector: OK')"
-          python --version
+      - name: Run Blue Archive connection test
+        run: python collect_events.py
+
