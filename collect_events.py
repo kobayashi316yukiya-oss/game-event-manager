@@ -5,7 +5,7 @@ from urllib.parse import urlparse
 
 JS_URL = (
     "https://webusstatic.yo-star.com/"
-    "bluearchive_jp_web/js/chunk-vendors.e970c44.js"
+    "bluearchive_jp_web/js/chunk-vendors.be970c44.js"
 )
 
 KEYWORDS = [
